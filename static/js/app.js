@@ -685,7 +685,7 @@
                 <h3 class="pfSectionTitle">${escHtml(COPY.commissionTitle)}</h3>
                 <p class="pfHint">${escHtml(COPY.commissionHint)}</p>
               </div>
-              <a class="pfJump" href="#pfPersonal">${escHtml(COPY.btnToPersonal)}</a>
+              <a class="pfJump" name="goto" href="#pfPersonal">${escHtml(COPY.btnToPersonal)}</a>
             </div>
 
             <div class="pfMasonry pfMasonry--commission">
@@ -701,7 +701,7 @@
                 <h3 class="pfSectionTitle">${escHtml(COPY.personalTitle)}</h3>
                 <p class="pfHint">${escHtml(COPY.personalHint)}</p>
               </div>
-              <a class="pfJump" href="#pfCommission">${escHtml(COPY.btnToCommission)}</a>
+              <a class="pfJump" name="goto" href="#pfCommission">${escHtml(COPY.btnToCommission)}</a>
             </div>
 
             <div class="pfMasonry">
@@ -756,4 +756,42 @@
   }
 
   document.addEventListener("DOMContentLoaded", loadShowcase);
+})();
+
+
+
+// ===== safe goto scroll =====
+(function () {
+  function getTargetFromHref(href) {
+    if (!href) return null;
+    const id = href.startsWith("#") ? href.slice(1) : href;
+    if (!id) return null;
+    return document.getElementById(id) || document.querySelector(`[name="${id}"]`);
+  }
+
+  function onClick(e) {
+    const a = e.target.closest('a[name="goto"]');
+    if (!a) return;
+
+    const href = a.getAttribute("href") || "";
+    if (!href.startsWith("#")) return;
+
+    const target = getTargetFromHref(href);
+    if (!target) {
+      console.warn("[goto] target not found:", href);
+      return;
+    }
+
+    e.preventDefault();
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+      inline: "nearest",
+    });
+
+    history.replaceState(null, "", href);
+  }
+
+  document.addEventListener("click", onClick, true);
 })();
