@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아요니님 아트머그</title>
+
+    <link rel="stylesheet" href="./static/css/common.css">
+</head>
+<body>
+    <main class="main">
+        <section class="sec" id="notice"></section>
+
+        <section class="sec" id="form">
+            <div class="container formWrap">
+                <div class="secHead">
+                    <p class="secHead__kicker">Form</p>
+                    <h2 class="secHead__title">신청 양식</h2>
+                    <p class="secHead__desc">아래 내용을 작성해 아트머그 문의창에 그대로 붙여넣어 주세요.</p>
+                </div>
+
+                <div class="card formCard">
+                    <!-- 상단 안내(이미지 첨부 관련) -->
+                    <div class="formNotice">
+                        <div class="formNotice__icon" aria-hidden="true">🖼️</div>
+                        <div class="formNotice__text">
+                            문의 작성 시 <b>이미지를 꼭 첨부</b>해주세요.
+                        </div>
+                    </div>
+
+                    <!-- 입력 폼 -->
+                    <form class="formSheet" autocomplete="off">
+                        <!-- 1 -->
+                        <section class="formBlock">
+                            <header class="formBlock__head">
+                            <span class="formBlock__no">1</span>
+                            <h3 class="formBlock__title">신청자 (방송용) 닉네임 / 사용용도</h3>
+                            </header>
+
+                            <div class="formGrid formGrid--2">
+                            <div class="field">
+                                <label class="label" for="f_nick">닉네임</label>
+                                <input class="input" id="f_nick" name="nick" placeholder="예) 슈라" />
+                            </div>
+
+                            <div class="field">
+                                <label class="label" for="f_use">사용용도</label>
+                                <input class="input" id="f_use" name="use" placeholder="예) 방송용 / 썸네일 / 굿즈 등" />
+                            </div>
+                            </div>
+                        </section>
+
+                        <!-- 2 -->
+                        <section class="formBlock">
+                            <header class="formBlock__head">
+                            <span class="formBlock__no">2</span>
+                            <h3 class="formBlock__title">캐릭터 자료 설명 (이미지 첨부 필수)</h3>
+                            </header>
+
+                            <div class="formGrid formGrid--2">
+                                <div class="field">
+                                    <label class="label" for="f_body">구도 범위</label>
+                                    <select class="select" id="f_body" name="body_range">
+                                    <option value="">선택</option>
+                                    <option>흉상</option>
+                                    <option>반신</option>
+                                    <option>반전신</option>
+                                    <option>전신</option>
+                                    </select>
+                                </div>
+
+                                <div class="field">
+                                    <label class="label" for="f_license">사용 범위</label>
+                                    <select class="select" id="f_license" name="license">
+                                    <option value="">선택</option>
+                                    <option>방송용</option>
+                                    <option>상업용</option>
+                                    </select>
+                                </div>
+
+                                <div class="field formGrid__full">
+                                    <label class="label" for="f_size">작업 사이즈</label>
+                                    <input
+                                    class="input"
+                                    id="f_size"
+                                    name="size"
+                                    placeholder="예) 300dpi 2000px 이상, (png/jpg/psd), 16:9 화면비율"
+                                    />
+                                </div>
+
+                                <div class="field formGrid__full">
+                                    <label class="label" for="f_pose">포즈 / 구도 설명</label>
+                                    <textarea class="textarea" id="f_pose" name="pose" placeholder="예) 상반신 정면, 오른손 브이, 시선은 카메라"></textarea>
+                                </div>
+
+                                <div class="field formGrid__full">
+                                    <label class="label" for="f_bg">배경 설명</label>
+                                    <textarea class="textarea" id="f_bg" name="bg" placeholder="예) 단색 / 그라데이션 / 소품 / 분위기 등"></textarea>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 3 -->
+                        <section class="formBlock">
+                            <header class="formBlock__head">
+                            <span class="formBlock__no">3</span>
+                            <h3 class="formBlock__title">포트폴리오 비공개 여부 / 공개 시점</h3>
+                            </header>
+
+                            <div class="field">
+                            <label class="label" for="f_public">작업물 공개 시점</label>
+                            <textarea
+                                class="textarea"
+                                id="f_public"
+                                name="public"
+                                placeholder="예) 3/15 방송에서 공개 예정 / 공개 불가(비공개 요청) / 2주 뒤 공개 가능"
+                            ></textarea>
+                            </div>
+                        </section>
+
+                        <!-- 4 -->
+                        <section class="formBlock">
+                            <header class="formBlock__head">
+                            <span class="formBlock__no">4</span>
+                            <h3 class="formBlock__title">납품 희망 날짜</h3>
+                            </header>
+
+                            <div class="formGrid formGrid--2">
+                                <div class="field">
+                                    <label class="label" for="f_deadline">희망 납기</label>
+                                    <input class="input" id="f_deadline" name="deadline" placeholder="기본 45일 / 희망 날짜 기입" />
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 5 -->
+                        <section class="formBlock">
+                            <header class="formBlock__head">
+                            <span class="formBlock__no">5</span>
+                            <h3 class="formBlock__title">그 외 문의 사항</h3>
+                            </header>
+
+                            <div class="field">
+                            <label class="label" for="f_extra">추가 내용</label>
+                            <textarea class="textarea" id="f_extra" name="extra" placeholder="예) 참고 링크 / 주의사항 / 기타 요청"></textarea>
+                            </div>
+                        </section>
+
+                        <!-- 하단 버튼 -->
+                        <div class="formActions">
+                            <button class="button formBtn" type="button" data-form-copy>양식 복사</button>
+                            <button class="button button--ghost formBtn" type="reset" data-form-reset>초기화</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="sec" id="showcase"></section>
+    </main>
+</body>
+
+<script src="./static/js/app.js" defer></script>
+</html>
