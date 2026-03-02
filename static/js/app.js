@@ -392,20 +392,25 @@
 (function () {
   const TARGET_ID = "showcase";
 
-  const ILLUST_CSV =
+  const PERSONAL_CSV =
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vSe0kYXtOsrsHFRfLWcWk1o5ULuOIWqHcAYW0DM6Yrb_wOUBZL7XbN8z0MAa7wLbjA98eFLl2tp0d_H/pub?gid=859576024&single=true&output=csv";
 
-  const COVER_CSV =
+  const COMMISSION_CSV =
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vSe0kYXtOsrsHFRfLWcWk1o5ULuOIWqHcAYW0DM6Yrb_wOUBZL7XbN8z0MAa7wLbjA98eFLl2tp0d_H/pub?gid=1857880290&single=true&output=csv";
 
   const COPY = {
     kicker: "Portfolio",
     title: "포트폴리오",
-    desc: "탭을 눌러 일러스트 / 커버곡을 확인할 수 있습니다.",
-    tabA: "일러스트",
-    tabB: "커버곡",
-    illustHint: "이미지를 클릭하면 새 창에서 크게 볼 수 있습니다.",
-    coverHint: "카드를 클릭하면 유튜브로 이동합니다.",
+    desc: "의뢰작 / 개인작을 확인할 수 있습니다.",
+
+    commissionTitle: "의뢰작",
+    commissionHint: "재생 버튼을 누르면 유튜브로 이동합니다. 일러스트는 새 창에서 크게 볼 수 있습니다.",
+
+    personalTitle: "개인작",
+    personalHint: "이미지를 클릭하면 새 창에서 크게 볼 수 있습니다.",
+
+    btnToCommission: "의뢰작 보러가기",
+    btnToPersonal: "개인작 보러가기",
   };
 
   // ---------- utils ----------
@@ -531,15 +536,12 @@
     const s = String(url || "").trim();
     if (!s) return "";
 
-    // youtu.be/ID
     let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/);
     if (m) return m[1];
 
-    // youtube.com/watch?v=ID
     m = s.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
     if (m) return m[1];
 
-    // youtube.com/embed/ID
     m = s.match(/\/embed\/([a-zA-Z0-9_-]{6,})/);
     if (m) return m[1];
 
@@ -553,7 +555,7 @@
   }
 
   // ---------- normalize rows ----------
-  function normalizeIllustRow(o) {
+  function normalizePersonalRow(o) {
     const order = toNum(o.order ?? o.Order ?? o["\ufefforder"]);
     const title = String(o.title ?? "").trim();
     const desc = String(o.desc ?? "").trim();
@@ -565,39 +567,46 @@
     return { order, title, desc, img, open };
   }
 
-  function normalizeCoverRow(o) {
+  function normalizeCommissionRow(o) {
     const order = toNum(o.order ?? o.Order ?? o["\ufefforder"]);
     const name = String(o.name ?? "").trim();
     const title = String(o.title ?? "").trim();
     const desc = String(o.desc ?? "").trim();
-    const url = String(o.url ?? "").trim();
-    const thumb = ytThumb(url);
+    const imgUrlRaw = String(o.img_url ?? o.imgUrl ?? o.image_url ?? "").trim();
+    const youtube = String(o.youtube_url ?? o.youtube ?? "").trim();
 
-    return { order, name, title, desc, url, thumb };
+    const img = normalizeImageUrl(imgUrlRaw);
+    const yt = youtube;
+
+    const href = yt ? yt : (img || imgUrlRaw);
+    const mediaType = yt ? "yt" : "img";
+    const mediaSrc = img || "";
+
+    return { order, name, title, desc, href, mediaType, mediaSrc };
   }
 
   // ---------- render ----------
-  function render(showcase, illustItems, coverItems) {
+  function render(personalItems, commissionItems) {
     const root = document.getElementById(TARGET_ID);
     if (!root) return;
 
-    const illust = (illustItems || [])
-      .map(normalizeIllustRow)
+    const personal = (personalItems || [])
+      .map(normalizePersonalRow)
       .filter((it) => it.open && it.img)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    const cover = (coverItems || [])
-      .map(normalizeCoverRow)
-      .filter((it) => it.url)
+    const commission = (commissionItems || [])
+      .map(normalizeCommissionRow)
+      .filter((it) => it.href)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    const illustHTML = illust.length
-      ? illust
+    const personalHTML = personal.length
+      ? personal
           .map((it) => {
             const t = it.title || "작업물";
             const d = it.desc ? withBreaks(escHtml(it.desc)) : "";
             return `
-              <a class="pfCard pfCard--illust"
+              <a class="pfCard pfCard--personal"
                  href="${escAttr(it.open)}"
                  target="_blank"
                  rel="noopener noreferrer">
@@ -614,26 +623,42 @@
             `.trim();
           })
           .join("")
-      : `<div class="notice__error">일러스트 데이터를 불러오지 못했습니다. (헤더: order, title, desc, url)</div>`;
+      : `<div class="notice__error">개인작 데이터를 불러오지 못했습니다. (헤더: order, title, desc, url)</div>`;
 
-    const coverHTML = cover.length
-      ? cover
+    const commissionHTML = commission.length
+      ? commission
           .map((it) => {
-            const head = [it.name, it.title].filter(Boolean).join(" · ") || "Cover";
+            const head = [it.name, it.title].filter(Boolean).join(" · ");
             const d = it.desc ? withBreaks(escHtml(it.desc)) : "";
+
+            const media =
+              it.mediaType === "yt"
+                ? `
+                  <div class="pfMedia pfMedia--yt">
+                    ${
+                      it.mediaSrc
+                        ? `<img src="${escAttr(it.mediaSrc)}" alt="${escAttr(head)}" loading="lazy">`
+                        : `<div class="pfPh">YouTube</div>`
+                    }
+                    <div class="pfPlay" aria-hidden="true">▶</div>
+                  </div>
+                `.trim()
+                : `
+                  <div class="pfMedia pfMedia--img">
+                    ${
+                      it.mediaSrc
+                        ? `<img src="${escAttr(it.mediaSrc)}" alt="${escAttr(head)}" loading="lazy">`
+                        : `<div class="pfPh">Image</div>`
+                    }
+                  </div>
+                `.trim();
+
             return `
-              <a class="pfCard pfCard--cover"
-                 href="${escAttr(it.url)}"
+              <a class="pfCard pfCard--commission"
+                 href="${escAttr(it.href)}"
                  target="_blank"
                  rel="noopener noreferrer">
-                <div class="pfMedia pfMedia--yt">
-                  ${
-                    it.thumb
-                      ? `<img src="${escAttr(it.thumb)}" alt="${escAttr(head)}" loading="lazy">`
-                      : `<div class="pfPh">YouTube</div>`
-                  }
-                  <div class="pfPlay" aria-hidden="true">▶</div>
-                </div>
+                ${media}
                 <div class="pfMeta">
                   <div class="pfTitle">${escHtml(head)}</div>
                   ${it.desc ? `<div class="pfDesc">${d}</div>` : ``}
@@ -642,7 +667,7 @@
             `.trim();
           })
           .join("")
-      : `<div class="notice__error">커버곡 데이터를 불러오지 못했습니다. (헤더: order, name, title, desc, url)</div>`;
+      : `<div class="notice__error">의뢰작 데이터를 불러오지 못했습니다. (헤더: order, name, title, desc, img_url, youtube_url)</div>`;
 
     root.innerHTML = `
       <div class="container showcaseWrap">
@@ -653,79 +678,40 @@
         </div>
 
         <div class="card showcaseCard">
-          <div class="pfTabs" role="tablist" aria-label="portfolio tabs">
-            <button class="pfTab is-active" type="button" role="tab"
-              aria-selected="true" aria-controls="pfPanelA" id="pfTabA" data-tab="a">
-              ${escHtml(COPY.tabA)}
-            </button>
-            <button class="pfTab" type="button" role="tab"
-              aria-selected="false" aria-controls="pfPanelB" id="pfTabB" data-tab="b">
-              ${escHtml(COPY.tabB)}
-            </button>
-          </div>
 
-          <div class="pfPanels">
-            <section class="pfPanel is-active" role="tabpanel" id="pfPanelA" aria-labelledby="pfTabA" data-panel="a">
-              <div class="pfHint">${escHtml(COPY.illustHint)}</div>
-              <div class="pfMasonry">
-                ${illustHTML}
+          <section class="pfSection" id="pfCommission">
+            <div class="pfSectionHead">
+              <div class="pfSectionHead__left">
+                <h3 class="pfSectionTitle">${escHtml(COPY.commissionTitle)}</h3>
+                <p class="pfHint">${escHtml(COPY.commissionHint)}</p>
               </div>
-            </section>
+              <a class="pfJump" href="#pfPersonal">${escHtml(COPY.btnToPersonal)}</a>
+            </div>
 
-            <section class="pfPanel" role="tabpanel" id="pfPanelB" aria-labelledby="pfTabB" data-panel="b">
-              <div class="pfHint">${escHtml(COPY.coverHint)}</div>
-              <div class="pfGrid">
-                ${coverHTML}
+            <div class="pfMasonry pfMasonry--commission">
+              ${commissionHTML}
+            </div>
+          </section>
+
+          <div class="pfDivider" role="separator" aria-hidden="true"></div>
+
+          <section class="pfSection" id="pfPersonal">
+            <div class="pfSectionHead">
+              <div class="pfSectionHead__left">
+                <h3 class="pfSectionTitle">${escHtml(COPY.personalTitle)}</h3>
+                <p class="pfHint">${escHtml(COPY.personalHint)}</p>
               </div>
-            </section>
-          </div>
+              <a class="pfJump" href="#pfCommission">${escHtml(COPY.btnToCommission)}</a>
+            </div>
+
+            <div class="pfMasonry">
+              ${personalHTML}
+            </div>
+          </section>
+
         </div>
       </div>
     `.trim();
-
-    bindTabs(root);
-  }
-
-  function bindTabs(root) {
-    const tabs = Array.from(root.querySelectorAll(".pfTab[data-tab]"));
-    const panels = Array.from(root.querySelectorAll(".pfPanel[data-panel]"));
-
-    const setActive = (key) => {
-      tabs.forEach((t) => {
-        const on = t.dataset.tab === key;
-        t.classList.toggle("is-active", on);
-        t.setAttribute("aria-selected", on ? "true" : "false");
-        t.tabIndex = on ? 0 : -1;
-      });
-      panels.forEach((p) => {
-        const on = p.dataset.panel === key;
-        p.classList.toggle("is-active", on);
-        p.hidden = !on;
-      });
-    };
-
-    // init
-    panels.forEach((p) => (p.hidden = !p.classList.contains("is-active")));
-
-    root.querySelector(".pfTabs")?.addEventListener("click", (e) => {
-      const btn = e.target?.closest?.(".pfTab[data-tab]");
-      if (!btn) return;
-      setActive(btn.dataset.tab);
-    });
-
-    // keyboard
-    root.querySelector(".pfTabs")?.addEventListener("keydown", (e) => {
-      const cur = tabs.findIndex((t) => t.classList.contains("is-active"));
-      if (cur < 0) return;
-
-      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        e.preventDefault();
-        const dir = e.key === "ArrowRight" ? 1 : -1;
-        const next = (cur + dir + tabs.length) % tabs.length;
-        tabs[next].focus();
-        setActive(tabs[next].dataset.tab);
-      }
-    });
   }
 
   // ---------- load ----------
@@ -747,25 +733,25 @@
     `.trim();
 
     try {
-      const [aRes, bRes] = await Promise.all([
-        fetch(ILLUST_CSV, { cache: "no-store" }),
-        fetch(COVER_CSV, { cache: "no-store" }),
+      const [pRes, cRes] = await Promise.all([
+        fetch(PERSONAL_CSV, { cache: "no-store" }),
+        fetch(COMMISSION_CSV, { cache: "no-store" }),
       ]);
 
-      if (!aRes.ok) throw new Error("Illust CSV fetch failed: " + aRes.status);
-      if (!bRes.ok) throw new Error("Cover CSV fetch failed: " + bRes.status);
+      if (!pRes.ok) throw new Error("Personal CSV fetch failed: " + pRes.status);
+      if (!cRes.ok) throw new Error("Commission CSV fetch failed: " + cRes.status);
 
-      const [aText, bText] = await Promise.all([aRes.text(), bRes.text()]);
-      const aRows = parseCSV(aText);
-      const bRows = parseCSV(bText);
+      const [pText, cText] = await Promise.all([pRes.text(), cRes.text()]);
+      const pRows = parseCSV(pText);
+      const cRows = parseCSV(cText);
 
-      const aObjs = rowsToObjects(aRows);
-      const bObjs = rowsToObjects(bRows);
+      const pObjs = rowsToObjects(pRows);
+      const cObjs = rowsToObjects(cRows);
 
-      render(root, aObjs, bObjs);
+      render(pObjs, cObjs);
     } catch (err) {
       console.warn("[showcase] load failed:", err);
-      render(root, [], []);
+      render([], []);
     }
   }
 
