@@ -769,7 +769,23 @@
     return document.getElementById(id) || document.querySelector(`[name="${id}"]`);
   }
 
-  function onClick(e) {
+  function getScrollParent(el) {
+    let parent = el.parentElement;
+    while (parent) {
+      const style = getComputedStyle(parent);
+      const overflowY = style.overflowY;
+      if (
+        (overflowY === "auto" || overflowY === "scroll") &&
+        parent.scrollHeight > parent.clientHeight
+      ) {
+        return parent;
+      }
+      parent = parent.parentElement;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+
+  document.addEventListener("click", function (e) {
     const a = e.target.closest('a[name="goto"]');
     if (!a) return;
 
@@ -777,21 +793,19 @@
     if (!href.startsWith("#")) return;
 
     const target = getTargetFromHref(href);
-    if (!target) {
-      console.warn("[goto] target not found:", href);
-      return;
-    }
+    if (!target) return;
 
     e.preventDefault();
 
-    target.scrollIntoView({
+    const scroller = getScrollParent(target);
+    const top =
+      target.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top +
+      scroller.scrollTop - 16;
+
+    scroller.scrollTo({
+      top,
       behavior: "smooth",
-      block: "start",
-      inline: "nearest",
     });
-
-    history.replaceState(null, "", href);
-  }
-
-  document.addEventListener("click", onClick, true);
+  }, true);
 })();
