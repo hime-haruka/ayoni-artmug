@@ -762,50 +762,66 @@
 
 // ===== safe goto scroll =====
 (function () {
-  function getTargetFromHref(href) {
-    if (!href) return null;
-    const id = href.startsWith("#") ? href.slice(1) : href;
-    if (!id) return null;
-    return document.getElementById(id) || document.querySelector(`[name="${id}"]`);
+  function getTargetId(el) {
+    if (!el) return "";
+
+    const direct = (el.getAttribute("data-goto") || "").trim();
+    if (direct) return direct;
+
+    const href = (el.getAttribute("href") || "").trim();
+    if (href.startsWith("#")) return href.slice(1);
+
+    return "";
   }
 
-  function getScrollParent(el) {
-    let parent = el.parentElement;
-    while (parent) {
-      const style = getComputedStyle(parent);
-      const overflowY = style.overflowY;
-      if (
-        (overflowY === "auto" || overflowY === "scroll") &&
-        parent.scrollHeight > parent.clientHeight
-      ) {
-        return parent;
-      }
-      parent = parent.parentElement;
-    }
-    return document.scrollingElement || document.documentElement;
+  function getScroller() {
+    return document.querySelector(".main")
+      || document.scrollingElement
+      || document.documentElement;
+  }
+
+  function getTop(target, scroller, offset = 20) {
+    const targetRect = target.getBoundingClientRect();
+
+    const scrollerRect =
+      scroller === document.scrollingElement || scroller === document.documentElement
+        ? { top: 0 }
+        : scroller.getBoundingClientRect();
+
+    return targetRect.top - scrollerRect.top + scroller.scrollTop - offset;
+  }
+
+  function moveTo(targetId) {
+    if (!targetId) return;
+
+    const target = document.getElementById(targetId);
+    const scroller = getScroller();
+
+    if (!target || !scroller) return;
+
+    const run = () => {
+      const top = getTop(target, scroller, 20);
+      scroller.scrollTo({
+        top,
+        behavior: "smooth",
+      });
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(run);
+    });
+
+    setTimeout(run, 180);
   }
 
   document.addEventListener("click", function (e) {
-    const a = e.target.closest('a[name="goto"]');
+    const a = e.target.closest('.topnav__links a[name="goto"]');
     if (!a) return;
 
-    const href = a.getAttribute("href") || "";
-    if (!href.startsWith("#")) return;
-
-    const target = getTargetFromHref(href);
-    if (!target) return;
-
     e.preventDefault();
+    e.stopPropagation();
 
-    const scroller = getScrollParent(target);
-    const top =
-      target.getBoundingClientRect().top -
-      scroller.getBoundingClientRect().top +
-      scroller.scrollTop - 16;
-
-    scroller.scrollTo({
-      top,
-      behavior: "smooth",
-    });
+    const targetId = getTargetId(a);
+    moveTo(targetId);
   }, true);
 })();
