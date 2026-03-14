@@ -760,33 +760,27 @@
 
 
 
-// ===== safe goto scroll =====
-// ===== top header goto only =====
 (function () {
-  function getHeaderTargetId(a) {
-    const href = (a.getAttribute("href") || "").trim();
-    if (href.startsWith("#")) return href.slice(1);
-    return "";
-  }
-
-  function getMainScroller() {
+  function getScroller() {
     return document.querySelector(".main");
   }
 
-  function getTopInScroller(target, scroller, offset = 20) {
+  function getTop(target, scroller, offset = 20) {
     const targetRect = target.getBoundingClientRect();
     const scrollerRect = scroller.getBoundingClientRect();
     return targetRect.top - scrollerRect.top + scroller.scrollTop - offset;
   }
 
-  function moveMainTo(id) {
-    const scroller = getMainScroller();
-    const target = document.getElementById(id);
-    if (!scroller || !target) return;
+  function moveTo(targetId) {
+    if (!targetId) return;
+
+    const target = document.getElementById(targetId);
+    const scroller = getScroller();
+    if (!target || !scroller) return;
 
     const run = () => {
       scroller.scrollTo({
-        top: getTopInScroller(target, scroller, 20),
+        top: getTop(target, scroller, 20),
         behavior: "smooth"
       });
     };
@@ -795,19 +789,31 @@
       requestAnimationFrame(run);
     });
 
-    setTimeout(run, 160);
+    setTimeout(run, 180);
   }
 
-  document.addEventListener("click", function (e) {
+  function handleClick(e) {
     const a = e.target.closest('.topnav__links a[name="goto"]');
     if (!a) return;
 
     e.preventDefault();
     e.stopPropagation();
 
-    const id = getHeaderTargetId(a);
-    if (!id) return;
+    const targetId = (a.getAttribute("data-goto") || "").trim();
+    moveTo(targetId);
+  }
 
-    moveMainTo(id);
-  }, true);
+  function handleKeydown(e) {
+    const a = e.target.closest('.topnav__links a[name="goto"]');
+    if (!a) return;
+
+    if (e.key !== "Enter" && e.key !== " ") return;
+
+    e.preventDefault();
+    const targetId = (a.getAttribute("data-goto") || "").trim();
+    moveTo(targetId);
+  }
+
+  document.addEventListener("click", handleClick, true);
+  document.addEventListener("keydown", handleKeydown, true);
 })();
