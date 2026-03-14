@@ -762,25 +762,25 @@
 
 (function () {
   function getScroller() {
-    return document.querySelector(".main");
+    return document.scrollingElement || document.documentElement;
   }
 
-  function getTop(target, scroller, offset = 20) {
-    const targetRect = target.getBoundingClientRect();
-    const scrollerRect = scroller.getBoundingClientRect();
-    return targetRect.top - scrollerRect.top + scroller.scrollTop - offset;
+  function getTop(target, offset = 20) {
+    const rect = target.getBoundingClientRect();
+    const currentTop = window.pageYOffset || document.documentElement.scrollTop || 0;
+    return rect.top + currentTop - offset;
   }
 
   function moveTo(targetId) {
     if (!targetId) return;
 
     const target = document.getElementById(targetId);
-    const scroller = getScroller();
-    if (!target || !scroller) return;
+    if (!target) return;
 
     const run = () => {
-      scroller.scrollTo({
-        top: getTop(target, scroller, 20),
+      const top = getTop(target, 20);
+      window.scrollTo({
+        top,
         behavior: "smooth"
       });
     };
@@ -806,10 +806,10 @@
   function handleKeydown(e) {
     const a = e.target.closest('.topnav__links a[name="goto"]');
     if (!a) return;
-
     if (e.key !== "Enter" && e.key !== " ") return;
 
     e.preventDefault();
+
     const targetId = (a.getAttribute("data-goto") || "").trim();
     moveTo(targetId);
   }
