@@ -761,38 +761,53 @@
 
 
 // ===== safe goto scroll =====
+// ===== top header goto only =====
 (function () {
-  function getTargetFromHref(href) {
-    if (!href) return null;
-    const id = href.startsWith("#") ? href.slice(1) : href;
-    if (!id) return null;
-    return document.getElementById(id) || document.querySelector(`[name="${id}"]`);
+  function getHeaderTargetId(a) {
+    const href = (a.getAttribute("href") || "").trim();
+    if (href.startsWith("#")) return href.slice(1);
+    return "";
   }
 
-  function onClick(e) {
-    const a = e.target.closest('a[name="goto"]');
-    if (!a) return;
+  function getMainScroller() {
+    return document.querySelector(".main");
+  }
 
-    const href = a.getAttribute("href") || "";
-    if (!href.startsWith("#")) return;
+  function getTopInScroller(target, scroller, offset = 20) {
+    const targetRect = target.getBoundingClientRect();
+    const scrollerRect = scroller.getBoundingClientRect();
+    return targetRect.top - scrollerRect.top + scroller.scrollTop - offset;
+  }
 
-    const target = getTargetFromHref(href);
-    if (!target) {
-      console.warn("[goto] target not found:", href);
-      return;
-    }
+  function moveMainTo(id) {
+    const scroller = getMainScroller();
+    const target = document.getElementById(id);
+    if (!scroller || !target) return;
 
-    e.preventDefault();
+    const run = () => {
+      scroller.scrollTo({
+        top: getTopInScroller(target, scroller, 20),
+        behavior: "smooth"
+      });
+    };
 
-    target.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-      inline: "nearest",
+    requestAnimationFrame(() => {
+      requestAnimationFrame(run);
     });
 
-    history.replaceState(null, "", href);
+    setTimeout(run, 160);
   }
 
-  document.addEventListener("click", onClick, true);
-})();
+  document.addEventListener("click", function (e) {
+    const a = e.target.closest('.topnav__links a[name="goto"]');
+    if (!a) return;
 
+    e.preventDefault();
+    e.stopPropagation();
+
+    const id = getHeaderTargetId(a);
+    if (!id) return;
+
+    moveMainTo(id);
+  }, true);
+})();
