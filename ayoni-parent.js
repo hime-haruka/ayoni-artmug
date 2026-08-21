@@ -33,8 +33,6 @@
     var style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-@font-face{font-family:'PayboocFont';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-07@1.0/paybooc-Light.woff') format('woff');font-weight:300;font-display:swap}
-@font-face{font-family:'PayboocFont';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-07@1.0/paybooc-Medium.woff') format('woff');font-weight:500;font-display:swap}
 html,body{overflow-x:hidden!important}
 #detailViews [name="am-root"],[name="am-root"]{text-align:start!important;padding:0!important;margin:0!important;line-height:normal!important;overflow:visible!important}
 #detailViews [name="am-root"] *,[name="am-root"] *{box-sizing:border-box}
@@ -42,12 +40,12 @@ html,body{overflow-x:hidden!important}
 #detailViews [name="am-root"] iframe,[name="am-root"] iframe{display:block!important;width:100%!important;max-width:1180px!important;min-height:760px;height:760px;margin:0 auto!important;border:0!important;overflow:hidden!important}
 .btn_open_btn,.btn_open,.btn_close{display:none!important;visibility:hidden!important;pointer-events:none!important}
 
-#${NAV_ID}{position:fixed!important;top:0!important;z-index:2147483000!important;display:none;box-sizing:border-box!important;background:#f2f5fd!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border:0!important;box-shadow:none!important;font-family:'PayboocFont',ui-sans-serif,system-ui,-apple-system,"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif!important;color:#0b1220!important;-webkit-font-smoothing:antialiased!important;text-rendering:optimizeLegibility!important}
+#${NAV_ID}{position:fixed!important;top:0!important;z-index:2147483000!important;display:none;box-sizing:border-box!important;background:#f2f5fd!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border:0!important;box-shadow:none!important;font-family:"Segoe UI","Pretendard","Noto Sans KR","Apple SD Gothic Neo",Arial,sans-serif!important;color:#0b1220!important;-webkit-font-smoothing:antialiased!important;-moz-osx-font-smoothing:grayscale!important;text-rendering:geometricPrecision!important;font-synthesis:none!important}
 #${NAV_ID}.is-show{display:block!important}
 #${NAV_ID} .ayoniParentNavV5__inner{max-width:1180px!important;margin:0 auto!important;padding:14px 24px!important;box-sizing:border-box!important}
 #${NAV_ID} .ayoniParentNavV5__links{display:flex!important;justify-content:center!important;align-items:center!important;gap:8px!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:none!important}
 #${NAV_ID} .ayoniParentNavV5__links::-webkit-scrollbar{display:none!important}
-#${NAV_ID} button{appearance:none!important;-webkit-appearance:none!important;display:inline-flex!important;align-items:center!important;margin:0!important;padding:9px 12px!important;border-radius:999px!important;font:inherit!important;font-family:'PayboocFont',ui-sans-serif,system-ui,-apple-system,"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif!important;font-size:13px!important;font-weight:300!important;line-height:1.35!important;letter-spacing:-.02em!important;color:#0b1220!important;border:1px solid transparent!important;background:transparent!important;box-shadow:none!important;cursor:pointer!important;transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease!important}
+#${NAV_ID} button{appearance:none!important;-webkit-appearance:none!important;display:inline-flex!important;align-items:center!important;margin:0!important;padding:9px 12px!important;border-radius:999px!important;font:inherit!important;font-family:"Segoe UI","Pretendard","Noto Sans KR","Apple SD Gothic Neo",Arial,sans-serif!important;font-size:13px!important;font-weight:400!important;line-height:1.35!important;-webkit-font-smoothing:antialiased!important;-moz-osx-font-smoothing:grayscale!important;text-rendering:geometricPrecision!important;font-synthesis:none!important;letter-spacing:-.02em!important;color:#0b1220!important;border:1px solid transparent!important;background:transparent!important;box-shadow:none!important;cursor:pointer!important;transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease!important}
 #${NAV_ID} button:hover{background:rgba(255,255,255,.34)!important;border-color:transparent!important;color:#0b1220!important}
 
 html.ayoniModalOpenV5,body.ayoniModalOpenV5{overflow:hidden!important}

@@ -473,3 +473,14 @@ a:hover { color: var(--brand-700); }
 .sec {
     scroll-margin-top: 84px;
 }
+
+.topnav,
+.topnav__links,
+.topnav__links a {
+    font-family: "Segoe UI", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif !important;
+    font-weight: 400 !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: geometricPrecision !important;
+    font-synthesis: none !important;
+}
