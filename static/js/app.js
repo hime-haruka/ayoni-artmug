@@ -404,10 +404,10 @@
     desc: "의뢰작 / 개인작을 확인할 수 있습니다.",
 
     commissionTitle: "의뢰작",
-    commissionHint: "재생 버튼을 누르면 유튜브로 이동합니다. 일러스트는 새 창에서 크게 볼 수 있습니다.",
+    commissionHint: "이미지와 영상을 클릭하면 화면에서 크게 볼 수 있습니다.",
 
     personalTitle: "개인작",
-    personalHint: "이미지를 클릭하면 새 창에서 크게 볼 수 있습니다.",
+    personalHint: "이미지를 클릭하면 화면에서 크게 볼 수 있습니다.",
 
     btnToCommission: "의뢰작 보러가기",
     btnToPersonal: "개인작 보러가기",
@@ -580,7 +580,7 @@
 
     const href = yt ? yt : (img || imgUrlRaw);
     const mediaType = yt ? "yt" : "img";
-    const mediaSrc = img || "";
+    const mediaSrc = img || (yt ? ytThumb(yt) : "");
 
     return { order, name, title, desc, href, mediaType, mediaSrc };
   }
@@ -818,17 +818,32 @@
   document.addEventListener("keydown", handleKeydown, true);
 })();
 
-/* Artmug iframe auto-height bridge */
+/* =========================================================
+   Artmug parent bridge
+   - iframe auto height
+   - parent viewport based sticky header
+   - parent-page scrolling for navigation / portfolio jumps
+   - parent viewport modal for images / YouTube
+========================================================= */
 (function () {
   'use strict';
 
-  var lastHeight = 0;
-  var timer = null;
+  const SOURCE = 'syura-css';
+  let parentViewport = null;
+  let lastHeight = 0;
+  let heightTimer = 0;
 
-  function getHeight() {
-    var body = document.body;
-    var html = document.documentElement;
+  function send(data) {
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(data, '*');
+      }
+    } catch (e) {}
+  }
 
+  function pageHeight() {
+    const body = document.body;
+    const html = document.documentElement;
     return Math.max(
       body ? body.scrollHeight : 0,
       body ? body.offsetHeight : 0,
@@ -839,69 +854,200 @@
     );
   }
 
-  function sendHeight(force) {
-    clearTimeout(timer);
-    timer = setTimeout(function () {
-      var height = Math.ceil(getHeight());
-
+  function sendHeight(force, delay = 40) {
+    clearTimeout(heightTimer);
+    heightTimer = setTimeout(() => {
+      const height = Math.ceil(pageHeight());
       if (!force && Math.abs(height - lastHeight) < 3) return;
       lastHeight = height;
+      send({ source: SOURCE, type: 'SYURA_IFRAME_HEIGHT', height });
+    }, delay);
+  }
 
-      try {
-        window.parent.postMessage({
-          source: 'syura-css',
-          type: 'SYURA_IFRAME_HEIGHT',
-          height: height
-        }, '*');
-      } catch (e) {}
-    }, 40);
+  function requestViewport() {
+    send({ source: SOURCE, type: 'SYURA_REQUEST_PARENT_VIEWPORT' });
+  }
+
+  function syncTopNav() {
+    const nav = document.querySelector('.topnav');
+    if (!nav || !parentViewport) return;
+
+    const iframeTop = Number(parentViewport.iframeTop || 0);
+    const iframeHeight = Number(parentViewport.iframeHeight || pageHeight());
+    const viewportHeight = Number(parentViewport.viewportHeight || 0);
+    const navHeight = nav.offsetHeight || 0;
+
+    const visibleTop = Math.max(0, -iframeTop);
+    const maxTranslate = Math.max(0, iframeHeight - navHeight);
+    const translateY = Math.min(visibleTop, maxTranslate);
+    const iframeVisible = iframeTop < viewportHeight && (iframeTop + iframeHeight) > 0;
+
+    nav.style.transform = `translate3d(0, ${iframeVisible ? translateY : 0}px, 0)`;
+    nav.style.willChange = 'transform';
+    nav.classList.toggle('is-scrolled', iframeVisible && translateY > 4);
+  }
+
+  function scrollParentToElement(el, navOffset = true) {
+    if (!el) return;
+    const nav = document.querySelector('.topnav');
+    const navHeight = navOffset && nav ? nav.offsetHeight : 0;
+    const y = el.getBoundingClientRect().top + (window.scrollY || 0);
+    send({
+      source: SOURCE,
+      type: 'SYURA_PARENT_SCROLL_TO',
+      targetY: y,
+      navHeight
+    });
+  }
+
+  function youtubeId(url) {
+    const s = String(url || '').trim();
+    if (!s) return '';
+    let m = s.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/);
+    if (m) return m[1];
+    m = s.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
+    if (m) return m[1];
+    m = s.match(/\/embed\/([a-zA-Z0-9_-]{6,})/);
+    if (m) return m[1];
+    m = s.match(/\/shorts\/([a-zA-Z0-9_-]{6,})/);
+    if (m) return m[1];
+    return '';
+  }
+
+  function openPortfolioModal(card) {
+    if (!card) return;
+    const href = card.getAttribute('href') || '';
+    const title = (card.querySelector('.pfTitle')?.textContent || '포트폴리오').trim();
+    const desc = (card.querySelector('.pfDesc')?.textContent || '').trim();
+    const yt = youtubeId(href);
+
+    if (yt) {
+      send({
+        source: SOURCE,
+        type: 'SYURA_OPEN_YOUTUBE_MODAL',
+        id: yt,
+        title,
+        desc
+      });
+      return;
+    }
+
+    const img = card.querySelector('.pfMedia img');
+    const src = href || (img ? img.src : '');
+    if (!src) return;
+
+    send({
+      source: SOURCE,
+      type: 'SYURA_OPEN_IMAGE_MODAL',
+      src,
+      title,
+      desc
+    });
+  }
+
+  function bindInteractions() {
+    if (window.__ayoniParentBridgeClicks) return;
+    window.__ayoniParentBridgeClicks = true;
+
+    document.addEventListener('click', (event) => {
+      const topLink = event.target.closest('.topnav__links a[name="goto"]');
+      if (topLink) {
+        const targetId = (topLink.getAttribute('data-goto') || '').trim();
+        const target = targetId ? document.getElementById(targetId) : null;
+        if (target) {
+          event.preventDefault();
+          scrollParentToElement(target, true);
+        }
+        return;
+      }
+
+      const jump = event.target.closest('.pfJump');
+      if (jump) {
+        const href = jump.getAttribute('href') || '';
+        if (href.startsWith('#')) {
+          const target = document.querySelector(href);
+          if (target) {
+            event.preventDefault();
+            scrollParentToElement(target, true);
+          }
+        }
+        return;
+      }
+
+      const card = event.target.closest('.pfCard');
+      if (card) {
+        event.preventDefault();
+        openPortfolioModal(card);
+      }
+    }, true);
+  }
+
+  function bindParentMessages() {
+    if (window.__ayoniParentBridgeMessages) return;
+    window.__ayoniParentBridgeMessages = true;
+
+    window.addEventListener('message', (event) => {
+      const data = event.data || {};
+      if (data.source !== 'syura-artmug-parent') return;
+      if (data.type !== 'SYURA_PARENT_VIEWPORT') return;
+
+      parentViewport = data;
+      syncTopNav();
+    });
+  }
+
+  function bindResize() {
+    if ('ResizeObserver' in window) {
+      const ro = new ResizeObserver(() => {
+        sendHeight(false, 60);
+        syncTopNav();
+      });
+      if (document.documentElement) ro.observe(document.documentElement);
+      if (document.body) ro.observe(document.body);
+    } else {
+      setInterval(() => {
+        sendHeight(false, 60);
+        syncTopNav();
+      }, 700);
+    }
+
+    window.addEventListener('load', () => {
+      sendHeight(true, 30);
+      requestViewport();
+      setTimeout(() => sendHeight(true, 0), 300);
+      setTimeout(requestViewport, 350);
+      setTimeout(() => sendHeight(true, 0), 900);
+      setTimeout(requestViewport, 950);
+    });
+
+    window.addEventListener('resize', () => {
+      sendHeight(true, 40);
+      requestViewport();
+    });
+
+    document.addEventListener('animationend', () => sendHeight(true, 80), true);
+    document.addEventListener('transitionend', () => sendHeight(true, 80), true);
+    document.addEventListener('change', () => sendHeight(true, 80), true);
+
+    document.addEventListener('click', () => {
+      setTimeout(() => sendHeight(true, 0), 150);
+      setTimeout(requestViewport, 180);
+    }, true);
   }
 
   function ready() {
-    try {
-      window.parent.postMessage({
-        source: 'syura-css',
-        type: 'SYURA_IFRAME_READY'
-      }, '*');
-    } catch (e) {}
-
-    sendHeight(true);
-    setTimeout(function () { sendHeight(true); }, 250);
-    setTimeout(function () { sendHeight(true); }, 800);
-    setTimeout(function () { sendHeight(true); }, 1800);
+    bindInteractions();
+    bindParentMessages();
+    bindResize();
+    send({ source: SOURCE, type: 'SYURA_IFRAME_READY' });
+    sendHeight(true, 20);
+    requestViewport();
+    setTimeout(() => sendHeight(true, 0), 400);
+    setTimeout(requestViewport, 450);
+    setTimeout(() => sendHeight(true, 0), 1200);
+    setTimeout(requestViewport, 1250);
   }
 
-  if ('ResizeObserver' in window) {
-    var ro = new ResizeObserver(function () {
-      sendHeight(false);
-    });
-
-    if (document.documentElement) ro.observe(document.documentElement);
-    if (document.body) ro.observe(document.body);
-  } else {
-    setInterval(function () {
-      sendHeight(false);
-    }, 700);
-  }
-
-  window.addEventListener('load', ready);
-  window.addEventListener('resize', function () { sendHeight(true); });
-  document.addEventListener('click', function () {
-    setTimeout(function () { sendHeight(true); }, 120);
-  }, true);
-  document.addEventListener('change', function () { sendHeight(true); }, true);
-  document.addEventListener('animationend', function () { sendHeight(true); }, true);
-  document.addEventListener('transitionend', function () { sendHeight(true); }, true);
-
-  document.querySelectorAll('img').forEach(function (img) {
-    if (!img.complete) {
-      img.addEventListener('load', function () { sendHeight(true); }, { once: true });
-    }
-  });
-
-  if (document.readyState !== 'loading') {
-    ready();
-  } else {
-    document.addEventListener('DOMContentLoaded', ready);
-  }
+  if (document.readyState !== 'loading') ready();
+  else document.addEventListener('DOMContentLoaded', ready);
 })();
